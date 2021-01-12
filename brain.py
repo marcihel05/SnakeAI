@@ -28,6 +28,8 @@ RIGHT = 'r'
 UP = 'u'
 DOWN = 'd'
 
+MUTATION_RATE = 0.05
+
 class Brain():
     def __init__(self, weights=''):
         self.brain = Sequential()
@@ -37,12 +39,28 @@ class Brain():
         self.brain.add(Activation('relu'))
         self.brain.add(Dense(OUTPUT))
         self.brain.add(Activation('sigmoid'))
+        self.mutationRate = MUTATION_RATE
 
         if weights:
             self.brain.load_wights(weights)
         self.brain.compile(loss='mse', optimizer='adam')
 
     def mutate(self, weigths):
+        weightsInputToHidden = weigths[1]
+        weightsHiddenToOutput = weigths[2]
+        for i in range(0, HIDDEN-1):
+            for j in range(0, INPUT-1):
+                random = random.uniform(0,1)
+                if random < MUTATION_RATE:
+                    weightsInputToHidden[i][j]+=random.Gauss(0,1)*5
+        
+        for i in range(0, OUTPUT-1):
+            for j in range(0, HIDDEN-1):
+                random = random.uniform(0,1)
+                if random < MUTATION_RATE:
+                    weightsHiddenToOutput[i][j]+=random.Gauss(0,1)*5
+                    
+        return [weightsInputToHidden, weightsHiddenToOutput]
 
 
     def crossoverInputToHidden(self, partner):
