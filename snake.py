@@ -1,16 +1,19 @@
 import numpy as np
-import tenserflow as tf
-from tf import keras
-from keras import Sequential
+import math
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
-import timeimport random
+import time
+import random
+from brain import Brain
+from matrix import Matrix
 
-WIN_WIDTH = 600
-WIN_HEIGHT = 600
+GAME_WIDTH = 800
+GAME_HEIGHT = 800
 
 RECT_DIM = 20
+
+VELOCITY = 20
 
 BLACK = (0,0,0)
 RED = (255, 0, 0)
@@ -18,57 +21,94 @@ WHITE = (255,255,255)
 GREEN = (0, 255, 0)
 
 INPUT = 24
-HIDDEN = 18
+HIDDEN = 16
 OUTPUT = 4
-
-LEFT = 'l'
-RIGHT = 'r'
-UP = 'u'
-DOWN = 'd'
 
 
 class Snake():
     def __init__(self):
-        self.x = WIN_WIDTH-100
-        self.y = 300
-        self.tail = [(self.x+RECT_DIM, self.y), (self.x+2*RECT_DIM, self.y)]
-        self.len = 3 #length of snake = 1+ len(self.tail)
-        self.dir = (0,0) #direction of movement
-        self.food = Food()
-        self.brain = Brain(INPUT, HIDDEN, OUTPUT) #neural network
+        self.x = GAME_WIDTH/2
+        self.y = GAME_HEIGHT/2
+        self.tail = [[self.x, self.y+RECT_DIM], [self.x, self.y+2*RECT_DIM],[self.x, self.y+3*RECT_DIM]]
+        self.len = 4 #length of snake = 1+ len(self.tail)
+        self.vel = [0, -VELOCITY] #direction of movement
+        self.food = self.set_food()
+        self.brain = Brain() #Brain()#neural network
         self.fitness = 0
         self.lifetime = 0
         self.leftToLive = 200 #to prevent infinite loops
+        self.allowToLive = 200
         self.score = 0
         self.dead = False
-        self.vision = [] #input of network
-        self.decision = [] #output of network
+        self.vision = np.zeros((24,1)) #input of network
+        self.decision = np.zeros((4,1)) #output of network
 
     
-    def move(win, self):
+    def think(self,win):
+        self.decision = self.brain.procces(self.vision)
+       
+    
+    def move(self, win):
         self.lifetime+=1
         self.leftToLive-=1
         if self.leftToLive < 0:
             self.dead = True
             return
+
+        direction = np.argmax(self.decision)
+
+        if direction == 0: #left
+            if not self.vel == [VELOCITY, 0]:
+                self.vel = [-VELOCITY, 0]
+                #self.vel = [0,0]
+                #self.dead = True
+            #else:
+                
         
-        self.x += self.dir[0]
-        self.y += self.dir[1]
+        if direction == 1: #up
+            if not self.vel == [0, VELOCITY]:
+                self.vel = [0, -VELOCITY]
+                #self.vel = [0,0]
+                #self.dead = True
+            #else:
+                
+        
+        if direction == 2: #right
+            if not self.vel == [-VELOCITY, 0]:
+                self.vel = [VELOCITY, 0]
+               # self.vel = [0,0]
+               # self.dead = True
+            #else:
+                
 
-        if self.collide(win, (self.food.x, self.food.y))
-            self.eat()
+        if direction == 3: #down
+            if not self.vel == [0, -VELOCITY]:
+                self.vel = [0, VELOCITY]
+                #self.vel = [0,0]
+                #self.dead = True
+            #else:
+                
+       # if self.vel == [0,0]:
+        #    return
+        #else:
+        self.moveTail()
+        self.x += self.vel[0]
+        self.y += self.vel[1]
+        
 
-        if not self.crash(win):
-            self.moveTail()
+        #if self.collide([self.food.x, self.food.y]):
+        self.eat(win) #check if ir found food
 
-
-    
+        self.crash(win) #check if it crashed
+            
     def moveTail(self):
-        pos = (self.x, self.y)-self.dir
-        for i in reversed(range(1, self.len-1)):
+        #pos = [self.x-self.vel[0], self.y-self.vel[1]]
+        i = self.len -2
+        while i > 0:
             self.tail[i] = self.tail[i-1]
-        self.tail[0] = pos
-
+            i-=1
+        self.tail[0] = [self.x, self.y]
+        #self.tail[0] = pos
 
 
     def grow(self):
@@ -96,113 +136,148 @@ class Snake():
                 pos = (last[0], last[1] - RECT_DIM)
 
         self.tail.append(pos)
+        self.len+=1
 
 
-    def eat(self):
-        self.score+=1
-        self.food = Food()
-        self.grow()
+    def eat(self,win):
+        if self.x == self.food.x and self.y == self.food.y:
+            self.leftToLive +=100
+            self.allowToLive+=100
+            self.score+=1
+            self.food = self.set_food()
+            self.grow()
 
-    def collide(self, win, pos):
-        snake_rect = pygame.draw.rect(win, GREEN, (self.x, self.y, RECT_DIM, RECT_DIM))
-        obj_rect = pygame.draw.rect(win, BLACK, (pos[0], pos[1], RECT_DIM, RECT_DIM))
-        if snake_rect.colliderect(obj_rect):
-            return True
     
-    def crashIntoSelf(self, win):
-        for i in range (1, self.len-2):
-            if self.collide(win, (self.tail[i][0], self.tail[i][1]):
+    def crashIntoSelf(self, x = "", y = ""):
+        if not x and not y:
+            x = self.x
+            y = self.y
+        for part in self.tail:
+            if x == part[0] and y == part[1]:
                 return True
         return False
 
     
     def crash(self, win):
-        if self.crashIntoSelf(win):
-            return True
-        if self.x > WIN_WIDTH or self.x <0 or self.y < 0 or self.y > WIN_HEIGHT:
+        if self.crashIntoSelf():
+            self.dead = True
+        if self.x > GAME_WIDTH-RECT_DIM or self.x <0 or self.y < 0 or self.y > GAME_HEIGHT-RECT_DIM:
             self.dead = True
 
 
-    def whatISee(self, win): #vision of snake
-        new_vision = self.look((RECT_DIM, 0), win) #right
+    def look(self, win): #vision of snake (input of neural net)
+
+        new_vision = self.whatISee((VELOCITY, 0), win) #right
         self.vision[0] = new_vision[0]
         self.vision[1] = new_vision[1]
         self.vision[2] = new_vision[2]
         
-        new_vision = self.look((RECT_DIM, RECT_DIM), win) #right-down
+        new_vision = self.whatISee((VELOCITY, VELOCITY), win) #right-down
         self.vision[3] = new_vision[0]
         self.vision[4] = new_vision[1]
         self.vision[5] = new_vision[2]
        
-        new_vision = self.look((0, RECT_DIM), win) #down
+        new_vision = self.whatISee((0, VELOCITY), win) #down
         self.vision[6] = new_vision[0]
         self.vision[7] = new_vision[1]
         self.vision[8] = new_vision[2]
         
-        new_vision = self.look((-RECT_DIM, 0), win) #left
+        new_vision = self.whatISee((-VELOCITY, 0), win) #left
         self.vision[9] = new_vision[0]
         self.vision[10] = new_vision[1]
         self.vision[11] = new_vision[2]
         
-        new_vision = self.look((-RECT_DIM, -RECT_DIM), win) #left-up
+        new_vision = self.whatISee((-VELOCITY, -VELOCITY), win) #left-up
         self.vision[12] = new_vision[0]
         self.vision[13] = new_vision[1]
         self.vision[14] = new_vision[2]
        
-        new_vision = self.look((0, -RECT_DIM), win) #up
+        new_vision = self.whatISee((0, -VELOCITY), win) #up
         self.vision[15] = new_vision[0]
         self.vision[16] = new_vision[1]
         self.vision[17] = new_vision[2]
         
-        new_vision = self.look((RECT_DIM, -RECT_DIM), win) #right-up
+        new_vision = self.whatISee((VELOCITY, -VELOCITY), win) #right-up
         self.vision[18] = new_vision[0]
         self.vision[19] = new_vision[1]
         self.vision[20] = new_vision[2]
        
-        new_vision = self.look((-RECT_DIM, RECT_DIM), win) #left-down
-         elf.vision[21] = new_vision[0]
+        new_vision = self.whatISee((-VELOCITY, VELOCITY), win) #left-down
+        self.vision[21] = new_vision[0]
         self.vision[22] = new_vision[1]
         self.vision[23] = new_vision[2]       
 
-
-    def look(self, dir, win):
-        vision = [] # (food, tail, wall)
-        dist = 0
-        pos = (self.x, self.y)
-        food_pos = (self.food.x, self.food.y)
+    def whatISee(self, dir, win):
+        vision = [0,0,0] # (food, tail, wall)
+        dist = 1
+        pos = [self.x, self.y]
+        food_pos = [self.food.x, self.food.y]
         foodSeen = False
         tailSeen = False
 
-        while pos[0] < WIN_WIDTH and pos[0] > 0 and pos[1] >0 and pos[1] < WIN_HEIGHT:
-            ++dist
-            pos +=dir
-            if not foodSeen and self.collide(win, food_pos):
+        while pos[0] < GAME_WIDTH and pos[0] > 0 and pos[1] > 0 and pos[1] < GAME_HEIGHT:
+            pos[0] = pos[0] + dir[0]
+            pos[1] = pos[1] + dir[1]
+            if not foodSeen and food_pos == pos:
                 foodSeen = True
                 vision[0] = 1
-            if not tailSeen and self.crashIntoSelf(win):
+            if not tailSeen and self.crashIntoSelf(pos[0], pos[1]):
                 tailSeen = True
                 vision[1] = 1/dist
+            dist+=1
         vision[2] = 1/dist
         return vision
 
 
-    def crossover(self, partner):
-        new_wights_1 = self.brain.crossoverInputToHidden(partner.brain)
-        new_wights_2 = self.brain.crossoverHiddenToInput(partner.brain)
-        child_weights = [new_wights_1, new_wights_2]
+    def crossover(self, partner): 
+        child = Snake()
+        child.brain = self.brain.crossover(partner.brain)
+        return child
+
+    
+    def mutate(self):
+        self.brain.mutate()
+
+    def calcFitness(self):
+        #self.fitness = self.score
+        #self.fitness = self.lifetime**2 + math.floor(pow(2, self.score))
+        self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score+1))
+        #if self.score == 0:
+          #  self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score))
+       # if self.leftToLive == 0: #probably started going in loop
+        #    self.fitness -=self.allowedToLive
+        #else:
+           # self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score+1))
+        #self.fitness = self.li
+
+
+    def clone(self):
+        new_snake = Snake()
+        new_snake.brain = self.brain
+        return new_snake
+
 
     def draw(self,win):
-        pygame.draw.rect(win, GREEN, (self.x, self.y, RECT_DIM, RECT_DIM))
-        for part in self.tail:
-          pygame.draw.rect(win, GREEN, (part[0], part[1], RECT_DIM, RECT_DIM))
         self.food.draw(win)
+        pygame.draw.rect(win, BLACK, (self.x, self.y, RECT_DIM, RECT_DIM), 5)
+        pygame.draw.rect(win, WHITE, (self.x, self.y, RECT_DIM, RECT_DIM))
+        for part in self.tail:
+            pygame.draw.rect(win, BLACK, (part[0], part[1], RECT_DIM, RECT_DIM), 5)
+            pygame.draw.rect(win, GREEN, (part[0], part[1], RECT_DIM, RECT_DIM))
+        
+    def set_food(self):
+        food = Food()
+        while(self.x == food.x and self.y == food.y):
+            food = Food()
+        return food
 
 class Food:
 
     def __init__(self):
         random.seed(time.time())
-        self.x = random.randrange(40, WIN_WIDTH-50)
-        self.y = random.randrange(40, WIN_WIDTH-50)
+        self.x = random.randint(0, 39)*20
+        self.y = random.randint(0, 39)*20
     
     def draw(self,win):
+        pygame.draw.rect(win, BLACK, (self.x, self.y, RECT_DIM, RECT_DIM),5)
         pygame.draw.rect(win, RED, (self.x, self.y, RECT_DIM, RECT_DIM))
