@@ -44,11 +44,11 @@ class Snake():
         self.decision = np.zeros((4,1)) #output of network
 
     
-    def think(self,win):
+    def think(self):
         self.decision = self.brain.procces(self.vision)
        
     
-    def move(self, win):
+    def move(self):
         self.lifetime+=1
         self.leftToLive-=1
         if self.leftToLive < 0:
@@ -58,60 +58,45 @@ class Snake():
         direction = np.argmax(self.decision)
 
         if direction == 0: #left
-            if not self.vel == [VELOCITY, 0]:
-                self.vel = [-VELOCITY, 0]
-                #self.vel = [0,0]
-                #self.dead = True
-            #else:
-                
+            self.vel = [-VELOCITY, 0]
+            #if not self.vel == [VELOCITY, 0]:
+             #   self.vel = [-VELOCITY, 0]
         
         if direction == 1: #up
-            if not self.vel == [0, VELOCITY]:
-                self.vel = [0, -VELOCITY]
-                #self.vel = [0,0]
-                #self.dead = True
-            #else:
+            self.vel = [0, -VELOCITY]
+           # if not self.vel == [0, VELOCITY]:
+            #    self.vel = [0, -VELOCITY]
                 
         
         if direction == 2: #right
-            if not self.vel == [-VELOCITY, 0]:
-                self.vel = [VELOCITY, 0]
-               # self.vel = [0,0]
-               # self.dead = True
-            #else:
+            self.vel = [VELOCITY, 0]
+            #if not self.vel == [-VELOCITY, 0]:
+             #   self.vel = [VELOCITY, 0]
                 
 
         if direction == 3: #down
-            if not self.vel == [0, -VELOCITY]:
-                self.vel = [0, VELOCITY]
-                #self.vel = [0,0]
-                #self.dead = True
-            #else:
-                
-       # if self.vel == [0,0]:
-        #    return
-        #else:
+            self.vel = [0, VELOCITY]
+           # if not self.vel == [0, -VELOCITY]:
+            #    self.vel = [0, VELOCITY]
+  
         self.moveTail()
         self.x += self.vel[0]
         self.y += self.vel[1]
         
 
-        #if self.collide([self.food.x, self.food.y]):
-        self.eat(win) #check if ir found food
+        self.eat() #check if it found food
 
-        self.crash(win) #check if it crashed
+        self.crash() #check if it crashed
             
     def moveTail(self):
-        #pos = [self.x-self.vel[0], self.y-self.vel[1]]
         i = self.len -2
         while i > 0:
             self.tail[i] = self.tail[i-1]
             i-=1
         self.tail[0] = [self.x, self.y]
-        #self.tail[0] = pos
 
 
-    def grow(self):
+    def grow(self):  #popraviti
         last = self.tail[(self.len)-2]
         if last[0] == self.x:
             if last[1] > self.y: #end in below head
@@ -139,7 +124,7 @@ class Snake():
         self.len+=1
 
 
-    def eat(self,win):
+    def eat(self):
         if self.x == self.food.x and self.y == self.food.y:
             self.leftToLive +=100
             self.allowToLive+=100
@@ -158,56 +143,56 @@ class Snake():
         return False
 
     
-    def crash(self, win):
+    def crash(self):
         if self.crashIntoSelf():
             self.dead = True
-        if self.x > GAME_WIDTH-RECT_DIM or self.x <0 or self.y < 0 or self.y > GAME_HEIGHT-RECT_DIM:
+        if self.x >= GAME_WIDTH-RECT_DIM or self.x <=0 or self.y <= 0 or self.y >= GAME_HEIGHT-RECT_DIM:
             self.dead = True
 
 
-    def look(self, win): #vision of snake (input of neural net)
+    def look(self): #vision of snake (input of neural net)
 
-        new_vision = self.whatISee((VELOCITY, 0), win) #right
+        new_vision = self.whatISee((VELOCITY, 0)) #right
         self.vision[0] = new_vision[0]
         self.vision[1] = new_vision[1]
         self.vision[2] = new_vision[2]
         
-        new_vision = self.whatISee((VELOCITY, VELOCITY), win) #right-down
+        new_vision = self.whatISee((VELOCITY, VELOCITY)) #right-down
         self.vision[3] = new_vision[0]
         self.vision[4] = new_vision[1]
         self.vision[5] = new_vision[2]
        
-        new_vision = self.whatISee((0, VELOCITY), win) #down
+        new_vision = self.whatISee((0, VELOCITY)) #down
         self.vision[6] = new_vision[0]
         self.vision[7] = new_vision[1]
         self.vision[8] = new_vision[2]
         
-        new_vision = self.whatISee((-VELOCITY, 0), win) #left
+        new_vision = self.whatISee((-VELOCITY, 0)) #left
         self.vision[9] = new_vision[0]
         self.vision[10] = new_vision[1]
         self.vision[11] = new_vision[2]
         
-        new_vision = self.whatISee((-VELOCITY, -VELOCITY), win) #left-up
+        new_vision = self.whatISee((-VELOCITY, -VELOCITY)) #left-up
         self.vision[12] = new_vision[0]
         self.vision[13] = new_vision[1]
         self.vision[14] = new_vision[2]
        
-        new_vision = self.whatISee((0, -VELOCITY), win) #up
+        new_vision = self.whatISee((0, -VELOCITY)) #up
         self.vision[15] = new_vision[0]
         self.vision[16] = new_vision[1]
         self.vision[17] = new_vision[2]
         
-        new_vision = self.whatISee((VELOCITY, -VELOCITY), win) #right-up
+        new_vision = self.whatISee((VELOCITY, -VELOCITY)) #right-up
         self.vision[18] = new_vision[0]
         self.vision[19] = new_vision[1]
         self.vision[20] = new_vision[2]
        
-        new_vision = self.whatISee((-VELOCITY, VELOCITY), win) #left-down
+        new_vision = self.whatISee((-VELOCITY, VELOCITY)) #left-down
         self.vision[21] = new_vision[0]
         self.vision[22] = new_vision[1]
         self.vision[23] = new_vision[2]       
 
-    def whatISee(self, dir, win):
+    def whatISee(self, dir):
         vision = [0,0,0] # (food, tail, wall)
         dist = 1
         pos = [self.x, self.y]

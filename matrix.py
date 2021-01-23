@@ -60,29 +60,13 @@ class Matrix():
             new.matrix[i][0] = self.matrix[i][0]
         new.matrix[self.row][0] = 1
         return new
-
-
-
-    #def multiply(self, other): #return Matrix
-     #   res = Matrix(self.row, other.col, False)
-      #  res.matrix = self.matrix.dot(other)
-       # return res
-    
-    def  multiply(self, other):
-        res = Matrix(self.row, other.col, False)
-        for i in range(0, self.row):
-            for j in range(0, other.col):
-                sum_ = 0
-                for k in range(0, self.col):
-                    sum_+= self.matrix[i][k]*other.matrix[k][j]
-                res.matrix[i][j] = sum_
-        return res
         
     
     def multiplyWithVector(self, other):
         res = Matrix(self.row, 1, False)
         res.matrix = self.matrix.dot(other)
         return res
+        
     
     def relu(self):
         for i in range(0, self.row):
