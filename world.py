@@ -24,7 +24,7 @@ SCORE_FONT = pygame.font.SysFont("monospace", 25)
 GEN_FONT = SCORE_FONT
 
 
-WIN_HEIGHT = 1000
+WIN_HEIGHT = 950
 WIN_WIDTH = 1700
 GAME_WIDTH = 800
 GAME_HEIGHT = 800
@@ -39,11 +39,13 @@ def draw_window(win, population, toShow, num_of_gen, global_best_score):
     population.draw(win, toShow)
     gentext = GEN_FONT.render("Generation: "+str(num_of_gen), 1, WHITE)
     currscoretext = SCORE_FONT.render("Current best score: "+str(population.snakes[population.currentBestSnake].score), 1, WHITE)
+    genbestscore = GEN_FONT.render("Best score of this generation: "+str(population.genBestScore), 1, WHITE)
     globalscoretext = SCORE_FONT.render("All time best score: "+str(population.globalBestScore), 1, WHITE)
     pygame.draw.rect(win, WHITE, (0,0, GAME_WIDTH, GAME_HEIGHT), 3)
-    win.blit(gentext, (820,5))
-    win.blit(currscoretext, (820,55))
-    win.blit(globalscoretext, (820,105))
+    win.blit(gentext, (1133,5))
+    win.blit(currscoretext, (5,820))
+    win.blit(globalscoretext, (1133,35))
+    win.blit(genbestscore, (5, 850))
     pygame.display.update()
 
 def main():
@@ -54,7 +56,7 @@ def main():
     showOnlyBest = False
     showBestFive = False
     pygame.init()
-    toShow = 0
+    toShow =  [0,1]
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     pygame.display.set_caption('AI learns to play Snake')
     clock = pygame.time.Clock()
@@ -79,13 +81,16 @@ def main():
                         FPS-=5
                     if event.key == pygame.K_SPACE:
                         showOnlyBest = True
-                        toShow = 1
+                        toShow[0] = 1
                     if event.key == pygame.K_a:
                         showOnlyBest = False
-                        toShow = 0
+                        toShow[0] = 0
                     if event.key == pygame.K_KP5:
                         showBestFive = True
-                        toShow = 5
+                        toShow[0] = 5
+                    if event.key == pygame.K_h:
+                        toShow[1] = not toShow[1]
+
             population.update()
             if population.globalBestScore > global_best_score:
                 global_best_score = population.globalBestScore

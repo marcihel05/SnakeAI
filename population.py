@@ -19,6 +19,7 @@ class Population:
         self.globalBestScore = 0 #best score of this generation
         self.globalFitness = 0 #fitness score of current generation
         self.bestGlobalFitness = 0 #fitness of best snake
+        self.genBestScore = 0
 
         for i in range(0, self.num_of_snakes):
             self.snakes.append(Snake())
@@ -42,6 +43,8 @@ class Population:
         self.currentBestSnake = maxSnake
         if maxScore > self.globalBestScore:
             self.globalBestScore = maxScore
+        if maxScore > self.genBestScore:
+            self.genBestScore = maxScore
     
     
     def findCurrentFiveBestSnakes(self):
@@ -90,6 +93,7 @@ class Population:
         self.snakes = new_snakes
         self.currentBestSnake = 0
         self.globalBestSnake = 0
+        self.genBestScore = 0
     
     def calcGlobalFitness(self):
         fitness = 0
@@ -127,19 +131,20 @@ class Population:
         return True
     
     def draw(self, win, toShow):
-        if toShow == 1:
+        if toShow[0] == 1:
             self.findCurrentBestSnake()
             self.snakes[self.currentBestSnake].draw(win)
-            index = np.argmax(self.snakes[self.currentBestSnake].decision)
-            self.snakes[self.currentBestSnake].brain.draw(win,index)
-        if toShow == 5:
+        if toShow[0] == 5:
             bestSnakes = self.findCurrentFiveBestSnakes()
             for snake in bestSnakes:
                 snake.draw(win)
-        if toShow == 0:
+        if toShow[0] == 0:
             for snake in self.snakes:
                 if not snake.dead:
                     snake.draw(win)
+        if toShow[1] == 1:
+            index = np.argmax(self.snakes[self.currentBestSnake].decision)
+            self.snakes[self.currentBestSnake].brain.draw(win,index)
 
         
 

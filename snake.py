@@ -26,14 +26,14 @@ OUTPUT = 4
 
 
 class Snake():
-    def __init__(self):
+    def __init__(self, rand = True):
         self.x = GAME_WIDTH/2
         self.y = GAME_HEIGHT/2
         self.tail = [[self.x, self.y+RECT_DIM], [self.x, self.y+2*RECT_DIM],[self.x, self.y+3*RECT_DIM]]
         self.len = 4 #length of snake = 1+ len(self.tail)
         self.vel = [0, -VELOCITY] #direction of movement
         self.food = self.set_food()
-        self.brain = Brain() #Brain()#neural network
+        self.brain = Brain(rand) #Brain()#neural network
         self.fitness = 0
         self.lifetime = 0
         self.leftToLive = 200 #to prevent infinite loops
@@ -192,7 +192,7 @@ class Snake():
         self.vision[22] = new_vision[1]
         self.vision[23] = new_vision[2]       
 
-    def whatISee(self, dir):
+    def whatISee(self, dir): #search for food, tail, wall in given direction
         vision = [0,0,0] # (food, tail, wall)
         dist = 1
         pos = [self.x, self.y]
@@ -215,7 +215,7 @@ class Snake():
 
 
     def crossover(self, partner): 
-        child = Snake()
+        child = Snake(rand = False)
         child.brain = self.brain.crossover(partner.brain)
         return child
 
@@ -237,7 +237,7 @@ class Snake():
 
 
     def clone(self):
-        new_snake = Snake()
+        new_snake = Snake(rand = False)
         new_snake.brain = self.brain
         return new_snake
 

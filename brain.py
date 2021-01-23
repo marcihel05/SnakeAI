@@ -26,10 +26,10 @@ ORANGE = (255,128,0)
 MUTATION_RATE = 0.05
 
 class Brain():
-    def __init__(self):
-        self.wih = Matrix(HIDDEN, INPUT+1) #weights beetwen input and hidden, bias included
-        self.whh = Matrix(HIDDEN, HIDDEN +1) 
-        self.who = Matrix(OUTPUT, HIDDEN+1) #weights beetwen hidden and output, bias included
+    def __init__(self, rand = True):
+        self.wih = Matrix(HIDDEN, INPUT+1, rand) #weights beetwen input and hidden, bias included
+        self.whh = Matrix(HIDDEN, HIDDEN +1, rand) 
+        self.who = Matrix(OUTPUT, HIDDEN+1,rand) #weights beetwen hidden and output, bias included
         self.x = 650 # coord for drawing
         self.y = 100
     
@@ -42,7 +42,7 @@ class Brain():
 
 
     def crossover(self, partner): #find weights for child #!!!modify so it returns brain!!!
-        child_brain = Brain()
+        child_brain = Brain(rand = False)
         child_brain.wih = self.wih.crossover(partner.wih)
         child_brain.whh = self.whh.crossover(partner.whh)
         child_brain.who = self.who.crossover(partner.who)
