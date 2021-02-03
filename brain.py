@@ -5,34 +5,27 @@ import pygame
 import time
 import random
 from matrix import Matrix
+from settings import *
 
-INPUT = 24
-HIDDEN = 16
-OUTPUT = 4
+#INPUT = 24
+#HIDDEN1 = 16
+#HIDDEN2 = 16
+#OUTPUT = 4
 
-WIN_HEIGHT = 1000
-WIN_WIDTH = 1700
-GAME_WIDTH = 800
-GAME_HEIGHT = 800
+#WIN_HEIGHT = 1000
+#WIN_WIDTH = 1700
+#GAME_WIDTH = 800
+#GAME_HEIGHT = 800
 
-BLACK = (0,0,0)
-RED = (255, 0, 0)
-WHITE = (255,255,255)
-GREEN = (0, 255, 0)
-YELLOW = (255, 255, 0)
-BLUE = (0,0,255)
-ORANGE = (255,128,0)
 
-MUTATION_RATE = 0.05
+
 
 class Brain():
     def __init__(self, rand = True):
-        self.wih = Matrix(HIDDEN, INPUT+1, rand) #weights beetwen input and hidden, bias included
-        self.whh = Matrix(HIDDEN, HIDDEN +1, rand) 
-        self.who = Matrix(OUTPUT, HIDDEN+1,rand) #weights beetwen hidden and output, bias included
-        self.x = 650 # coord for drawing
-        self.y = 100
-    
+        self.wih = Matrix(HIDDEN1, INPUT+1, rand) #weights beetwen input and hidden, bias included
+        self.whh = Matrix(HIDDEN2, HIDDEN1 +1, rand) 
+        self.who = Matrix(OUTPUT, HIDDEN2+1,rand) #weights beetwen hidden and output, bias included
+
 
     def mutate(self): #change some chromosomes
         self.wih.mutate()
@@ -50,7 +43,7 @@ class Brain():
 
     def procces(self, vision): #decide direction of movement
 
-        input_vision = Matrix(24, 1);
+        input_vision = Matrix(INPUT, 1, False);
         input_vision.matrix = vision #input
         inputBias = input_vision.addBias() #add bias to input vector
         middle = self.wih.multiplyWithVector(inputBias.matrix) #multiply weights and input
@@ -72,7 +65,7 @@ class Brain():
         c = 35
         for i in range(0, INPUT):
             d = 187
-            for j in range(0, HIDDEN):
+            for j in range(0, HIDDEN1):
                 if self.wih.matrix[j][i] < 0:
                     pygame.draw.line(win, BLUE, (900, c),(1133, d) ) #weights between input and first hidden layer
                 else:
@@ -82,9 +75,9 @@ class Brain():
             c+=38
         
         c = 187
-        for i in range(0, HIDDEN):
+        for i in range(0, HIDDEN1):
             d = 187
-            for j in range(0,HIDDEN):
+            for j in range(0,HIDDEN2):
                 if self.whh.matrix[j][i] < 0:
                     pygame.draw.line(win, BLUE, (1133, c), (1366, d)) #weights between first and second hidden layer
                 else:
@@ -94,7 +87,7 @@ class Brain():
             c+=38
         
         c = 187
-        for i in range(0,HIDDEN):
+        for i in range(0,HIDDEN2):
             d = 415
             for j in range(0, OUTPUT):
                 if self.who.matrix[j][i] < 0:

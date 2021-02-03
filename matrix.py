@@ -5,8 +5,9 @@ import pygame
 import random
 import time
 import math
+from settings import *
 
-MUTATION_RATE = 0.05
+#MUTATION_RATE = 0.1
 
 def sigmoid_function(x):
     return 1/(1+math.exp(-x))
@@ -15,17 +16,16 @@ class Matrix():
     def __init__(self, r = 0, c = 0, rand = True):
         self.row = r
         self.col = c
-        random.seed(time.time())
         self.matrix = np.zeros((self.row, self.col))
         if rand == True: #set weights
             for i in range(0, self.row):
                 for j in range(0, self.col):
-                    random.seed(time.time())
+                    #random.seed(time.time())
                     self.matrix[i][j] = random.uniform(-1, 1)
     
     def crossover(self, partner):
         child = Matrix(self.row, self.col, False)
-        random.seed(time.time())
+        #random.seed(time.time())
         randR = random.randint(0, self.row-1)
         randC = random.randint(0, self.col-1)
 
@@ -42,9 +42,10 @@ class Matrix():
     def mutate(self):
         for i in range(0, self.row):
             for j in range(0, self.col):
-                random.seed(time.time())
+                #random.seed(time.time())
                 rand = random.uniform(0,1)
                 if rand < MUTATION_RATE:
+                    #self.matrix[i][j] = random.uniform(-1,1)
                     r = random.gauss(0,1)/5
                     self.matrix[i][j] +=r
                 if self.matrix[i][j] > 1:

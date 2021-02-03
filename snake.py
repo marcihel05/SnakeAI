@@ -7,41 +7,29 @@ import time
 import random
 from brain import Brain
 from matrix import Matrix
+from settings import *
 
-GAME_WIDTH = 800
-GAME_HEIGHT = 800
-
-RECT_DIM = 20
-
-VELOCITY = 20
-
-BLACK = (0,0,0)
-RED = (255, 0, 0)
-WHITE = (255,255,255)
-GREEN = (0, 255, 0)
-
-INPUT = 24
-HIDDEN = 16
-OUTPUT = 4
 
 
 class Snake():
-    def __init__(self, rand = True):
+    def __init__(self, rand = True, load = False):
         self.x = GAME_WIDTH/2
         self.y = GAME_HEIGHT/2
         self.tail = [[self.x, self.y+RECT_DIM], [self.x, self.y+2*RECT_DIM],[self.x, self.y+3*RECT_DIM]]
         self.len = 4 #length of snake = 1+ len(self.tail)
         self.vel = [0, -VELOCITY] #direction of movement
         self.food = self.set_food()
-        self.brain = Brain(rand) #Brain()#neural network
+        self.brain = Brain(rand) #neural network
         self.fitness = 0
         self.lifetime = 0
         self.leftToLive = 200 #to prevent infinite loops
-        self.allowToLive = 200
+        #self.allowToLive = 200
         self.score = 0
         self.dead = False
-        self.vision = np.zeros((24,1)) #input of network
-        self.decision = np.zeros((4,1)) #output of network
+        self.vision = np.zeros((INPUT,1)) #input of network
+        self.decision = np.zeros((OUTPUT,1)) #output of network
+        if load:
+            self.loadBrain()
 
     
     def think(self):
@@ -58,26 +46,26 @@ class Snake():
         direction = np.argmax(self.decision)
 
         if direction == 0: #left
-            self.vel = [-VELOCITY, 0]
-            #if not self.vel == [VELOCITY, 0]:
-             #   self.vel = [-VELOCITY, 0]
+            #self.vel = [-VELOCITY, 0]
+            if not self.vel == [VELOCITY, 0]:
+                self.vel = [-VELOCITY, 0]
         
         if direction == 1: #up
-            self.vel = [0, -VELOCITY]
-           # if not self.vel == [0, VELOCITY]:
-            #    self.vel = [0, -VELOCITY]
+            #self.vel = [0, -VELOCITY]
+            if not self.vel == [0, VELOCITY]:
+                self.vel = [0, -VELOCITY]
                 
         
         if direction == 2: #right
-            self.vel = [VELOCITY, 0]
-            #if not self.vel == [-VELOCITY, 0]:
-             #   self.vel = [VELOCITY, 0]
+            #self.vel = [VELOCITY, 0]
+            if not self.vel == [-VELOCITY, 0]:
+                self.vel = [VELOCITY, 0]
                 
 
         if direction == 3: #down
-            self.vel = [0, VELOCITY]
-           # if not self.vel == [0, -VELOCITY]:
-            #    self.vel = [0, VELOCITY]
+            #self.vel = [0, VELOCITY]
+            if not self.vel == [0, -VELOCITY]:
+                self.vel = [0, VELOCITY]
   
         self.moveTail()
         self.x += self.vel[0]
@@ -127,7 +115,7 @@ class Snake():
     def eat(self):
         if self.x == self.food.x and self.y == self.food.y:
             self.leftToLive +=100
-            self.allowToLive+=100
+            #self.allowToLive+=100
             self.score+=1
             self.food = self.set_food()
             self.grow()
@@ -146,7 +134,7 @@ class Snake():
     def crash(self):
         if self.crashIntoSelf():
             self.dead = True
-        if self.x >= GAME_WIDTH-RECT_DIM or self.x <=0 or self.y <= 0 or self.y >= GAME_HEIGHT-RECT_DIM:
+        if self.x > GAME_WIDTH-RECT_DIM or self.x <0 or self.y < 0 or self.y > GAME_HEIGHT-RECT_DIM:
             self.dead = True
 
 
@@ -208,7 +196,7 @@ class Snake():
                 vision[0] = 1
             if not tailSeen and self.crashIntoSelf(pos[0], pos[1]):
                 tailSeen = True
-                vision[1] = 1/dist
+                vision[1] = 1# 1/dist #1-1/dist
             dist+=1
         vision[2] = 1/dist
         return vision
@@ -226,11 +214,14 @@ class Snake():
     def calcFitness(self):
         #self.fitness = self.score
         #self.fitness = self.lifetime**2 + math.floor(pow(2, self.score))
-        self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score+1))
+        if self.score <=10:
+            self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score+1))
+        else:
+            self.fitness = self.lifetime+self.lifetime*self.score
         #if self.score == 0:
           #  self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score))
        # if self.leftToLive == 0: #probably started going in loop
-        #    self.fitness -=self.allowedToLive
+        #    self.fitness -=self.allowToLive
         #else:
            # self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score+1))
         #self.fitness = self.li
@@ -242,26 +233,51 @@ class Snake():
         return new_snake
 
 
-    def draw(self,win):
+    def draw(self,win, toShow = False):
         self.food.draw(win)
         pygame.draw.rect(win, BLACK, (self.x, self.y, RECT_DIM, RECT_DIM), 5)
         pygame.draw.rect(win, WHITE, (self.x, self.y, RECT_DIM, RECT_DIM))
         for part in self.tail:
             pygame.draw.rect(win, BLACK, (part[0], part[1], RECT_DIM, RECT_DIM), 5)
             pygame.draw.rect(win, GREEN, (part[0], part[1], RECT_DIM, RECT_DIM))
-        
+        if toShow:
+            self.brain.draw(win, np.argmax(self.decision))
+
     def set_food(self):
         food = Food()
         while(self.x == food.x and self.y == food.y):
             food = Food()
         return food
 
+    def loadBrain(self):
+        f = open(BRAIN_FILE)
+        weights_map = map(float, f)
+        weights = list(weights_map)
+        k = 0
+        for i in range(0, HIDDEN1):
+            for j in range(0, INPUT+1):
+                self.brain.wih.matrix[i][j] = weights[k]
+                k+=1
+
+        for i in range(0, HIDDEN2):
+            for j in range(0, HIDDEN1+1):
+                self.brain.whh.matrix[i][j] = weights[k]
+                k+=1
+
+        for i in range(0, OUTPUT):
+            for j in range(0, HIDDEN2+1):
+                self.brain.who.matrix[i][j] = weights[k]
+                k+=1
+
+        f.close()
+
+
 class Food:
 
     def __init__(self):
-        random.seed(time.time())
-        self.x = random.randint(0, 39)*20
-        self.y = random.randint(0, 39)*20
+       #random.seed(time.time())
+        self.x = random.randrange(1,39)*20
+        self.y = random.randrange(1,39)*20
     
     def draw(self,win):
         pygame.draw.rect(win, BLACK, (self.x, self.y, RECT_DIM, RECT_DIM),5)
