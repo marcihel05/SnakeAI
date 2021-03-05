@@ -3,7 +3,6 @@ import math
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
-import time
 import random
 from brain import Brain
 from matrix import Matrix
@@ -16,108 +15,121 @@ class Snake():
         self.x = GAME_WIDTH/2
         self.y = GAME_HEIGHT/2
         self.tail = [[self.x, self.y+RECT_DIM], [self.x, self.y+2*RECT_DIM],[self.x, self.y+3*RECT_DIM]]
+        self.last_pos = ""
         self.len = 4 #length of snake = 1+ len(self.tail)
-        self.vel = [0, -VELOCITY] #direction of movement
+        self.vel = [0, 0] #direction of movement
         self.food = self.set_food()
         self.brain = Brain(rand) #neural network
         self.fitness = 0
-        self.lifetime = 0
-        self.leftToLive = 200 #to prevent infinite loops
-        #self.allowToLive = 200
+        self.lifetime = 0 #how many steps it made
+        self.leftToLive = LEFT_TO_LIVE #to prevent infinite loops
         self.score = 0
+        self.had_eaten = False
         self.dead = False
         self.vision = np.zeros((INPUT,1)) #input of network
         self.decision = np.zeros((OUTPUT,1)) #output of network
-        if load:
+        self.load = load
+        if self.load: #if testing trained snake
             self.loadBrain()
 
     
     def think(self):
-        self.decision = self.brain.procces(self.vision)
+        self.decision = self.brain.decide(self.vision)
        
     
     def move(self):
-        self.lifetime+=1
-        self.leftToLive-=1
-        if self.leftToLive < 0:
-            self.dead = True
-            return
+        if not self.load:
+            self.lifetime+=1
+            self.leftToLive-=1
+            if self.leftToLive < 0:
+                self.dead = True
+                return
 
         direction = np.argmax(self.decision)
 
         if direction == 0: #left
-            #self.vel = [-VELOCITY, 0]
-            if not self.vel == [VELOCITY, 0]:
-                self.vel = [-VELOCITY, 0]
+            if self.vel == UP or self.vel == DOWN:
+                self.leftToLive-=1
+            if not self.vel == RIGHT:
+                self.vel = LEFT
         
         if direction == 1: #up
-            #self.vel = [0, -VELOCITY]
-            if not self.vel == [0, VELOCITY]:
-                self.vel = [0, -VELOCITY]
+            if self.vel == RIGHT or self.vel == LEFT:
+                self.leftToLive-=1
+            if not self.vel == DOWN:
+                self.vel = UP
                 
         
         if direction == 2: #right
-            #self.vel = [VELOCITY, 0]
-            if not self.vel == [-VELOCITY, 0]:
-                self.vel = [VELOCITY, 0]
+            if self.vel == UP or self.vel == DOWN:
+                self.leftToLive-=1
+            if not self.vel == LEFT:
+                self.vel = RIGHT
                 
 
         if direction == 3: #down
-            #self.vel = [0, VELOCITY]
-            if not self.vel == [0, -VELOCITY]:
-                self.vel = [0, VELOCITY]
+            if self.vel == RIGHT or self.vel == LEFT:
+                self.leftToLive-=1
+            if not self.vel == UP:
+                self.vel = DOWN
   
+        self.eat() #check if it found food
+
         self.moveTail()
         self.x += self.vel[0]
         self.y += self.vel[1]
         
 
-        self.eat() #check if it found food
 
         self.crash() #check if it crashed
             
     def moveTail(self):
         i = self.len -2
+        self.last_pos = self.tail[i]
         while i > 0:
             self.tail[i] = self.tail[i-1]
             i-=1
         self.tail[0] = [self.x, self.y]
+        if self.had_eaten:
+            self.grow();
+            self.had_eaten = False
 
 
     def grow(self):  #popraviti
-        last = self.tail[(self.len)-2]
-        if last[0] == self.x:
-            if last[1] > self.y: #end in below head
-                pos = (last[0], last[1]+RECT_DIM)
-            else: #end is above head
-                pos = (last[0], last[1]-RECT_DIM)
+        self.tail.append(self.last_pos)
+       # last = self.tail[(self.len)-2]
+        #if last[0] == self.x:
+         #   if last[1] > self.y: #end in below head
+          #      pos = (last[0], last[1]+RECT_DIM)
+           # else: #end is above head
+            #    pos = (last[0], last[1]-RECT_DIM)
 
-        if last[0] < self.x:
-            if last[1] == self.y: #moving to right
-                pos = (last[0]-RECT_DIM, last[1])
-            if last[1] > self.y: #
-                pos = (last[0]-RECT_DIM, last[1])
-            if last[1] < self.y:
-                pos = (last[0], last[1]- RECT_DIM)
+        #if last[0] < self.x:
+         #   if last[1] == self.y: #moving to right
+          #      pos = (last[0]-RECT_DIM, last[1])
+           # if last[1] > self.y: #
+            #    pos = (last[0]-RECT_DIM, last[1])
+            #if last[1] < self.y:
+             #   pos = (last[0], last[1]- RECT_DIM)
         
-        if last[0] > self.x:
-            if last[1] == self.y:# moving to left
-                pos = (last[0] + RECT_DIM, last[1])
-            if last[1] > self.y:
-                pos = (last[0] + RECT_DIM, last[1])
-            if last[1] < self.y:
-                pos = (last[0], last[1] - RECT_DIM)
+        #if last[0] > self.x:
+         #   if last[1] == self.y:# moving to left
+          #      pos = (last[0] + RECT_DIM, last[1])
+           # if last[1] > self.y:
+            #    pos = (last[0] + RECT_DIM, last[1])
+            #if last[1] < self.y:
+             #   pos = (last[0], last[1] - RECT_DIM)
 
-        self.tail.append(pos)
+        #self.tail.append(pos)
         self.len+=1
 
 
     def eat(self):
-        if self.x == self.food.x and self.y == self.food.y:
-            self.leftToLive +=100
-            #self.allowToLive+=100
+        if self.x+self.vel[0] == self.food.x and self.y + self.vel[1]== self.food.y:
+            self.leftToLive = 200
             self.score+=1
             self.food = self.set_food()
+            self.had_eaten = True
             self.grow()
 
     
@@ -178,7 +190,10 @@ class Snake():
         new_vision = self.whatISee((-VELOCITY, VELOCITY)) #left-down
         self.vision[21] = new_vision[0]
         self.vision[22] = new_vision[1]
-        self.vision[23] = new_vision[2]       
+        self.vision[23] = new_vision[2]
+
+        num_of_rect = (GAME_HEIGHT*GAME_WIDTH)/(RECT_DIM*RECT_DIM)
+        self.vision[24] = self.len/(num_of_rect) 
 
     def whatISee(self, dir): #search for food, tail, wall in given direction
         vision = [0,0,0] # (food, tail, wall)
@@ -193,10 +208,10 @@ class Snake():
             pos[1] = pos[1] + dir[1]
             if not foodSeen and food_pos == pos:
                 foodSeen = True
-                vision[0] = 1
+                vision[0] = 1#1/dist #1
             if not tailSeen and self.crashIntoSelf(pos[0], pos[1]):
                 tailSeen = True
-                vision[1] = 1# 1/dist #1-1/dist
+                vision[1] = 1/dist #1
             dist+=1
         vision[2] = 1/dist
         return vision
@@ -212,19 +227,14 @@ class Snake():
         self.brain.mutate()
 
     def calcFitness(self):
-        #self.fitness = self.score
-        #self.fitness = self.lifetime**2 + math.floor(pow(2, self.score))
-        if self.score <=10:
+        if self.leftToLive == 0:
+            self.lifetime-=50
+        if self.score == 0:
+            self.fitness = pow(self.lifetime, 1.5)
+        if self.score > 0:
             self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score+1))
-        else:
-            self.fitness = self.lifetime+self.lifetime*self.score
-        #if self.score == 0:
-          #  self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score))
-       # if self.leftToLive == 0: #probably started going in loop
-        #    self.fitness -=self.allowToLive
-        #else:
-           # self.fitness = self.lifetime*self.lifetime * math.floor(pow(2, self.score+1))
-        #self.fitness = self.li
+        if self.fitness < 0:
+            self.fitness = 0
 
 
     def clone(self):
@@ -236,12 +246,14 @@ class Snake():
     def draw(self,win, toShow = False):
         self.food.draw(win)
         pygame.draw.rect(win, BLACK, (self.x, self.y, RECT_DIM, RECT_DIM), 5)
-        pygame.draw.rect(win, WHITE, (self.x, self.y, RECT_DIM, RECT_DIM))
+        pygame.draw.rect(win, GREEN, (self.x, self.y, RECT_DIM, RECT_DIM))
         for part in self.tail:
             pygame.draw.rect(win, BLACK, (part[0], part[1], RECT_DIM, RECT_DIM), 5)
             pygame.draw.rect(win, GREEN, (part[0], part[1], RECT_DIM, RECT_DIM))
+        win.fill(BLACK, (self.x+5, self.y+10-1,3,3))
+        win.fill(BLACK, (self.x+15-2, self.y+10-1,3, 3))
         if toShow:
-            self.brain.draw(win, np.argmax(self.decision))
+            self.brain.draw(win, self.vision, np.argmax(self.decision))
 
     def set_food(self):
         food = Food()
@@ -275,9 +287,8 @@ class Snake():
 class Food:
 
     def __init__(self):
-       #random.seed(time.time())
-        self.x = random.randrange(1,39)*20
-        self.y = random.randrange(1,39)*20
+        self.x = random.randrange(1,int(GAME_WIDTH/RECT_DIM)-1)*RECT_DIM
+        self.y = random.randrange(1,int(GAME_HEIGHT/RECT_DIM)-1)*RECT_DIM
     
     def draw(self,win):
         pygame.draw.rect(win, BLACK, (self.x, self.y, RECT_DIM, RECT_DIM),5)
