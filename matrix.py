@@ -3,11 +3,9 @@ import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 import random
-import time
 import math
 from settings import *
 
-#MUTATION_RATE = 0.1
 
 def sigmoid_function(x):
     return 1/(1+math.exp(-x))
@@ -20,12 +18,10 @@ class Matrix():
         if rand == True: #set weights
             for i in range(0, self.row):
                 for j in range(0, self.col):
-                    #random.seed(time.time())
                     self.matrix[i][j] = random.uniform(-1, 1)
     
     def crossover(self, partner):
         child = Matrix(self.row, self.col, False)
-        #random.seed(time.time())
         randR = random.randint(0, self.row-1)
         randC = random.randint(0, self.col-1)
 
@@ -42,10 +38,8 @@ class Matrix():
     def mutate(self):
         for i in range(0, self.row):
             for j in range(0, self.col):
-                #random.seed(time.time())
                 rand = random.uniform(0,1)
                 if rand < MUTATION_RATE:
-                    #self.matrix[i][j] = random.uniform(-1,1)
                     r = random.gauss(0,1)/5
                     self.matrix[i][j] +=r
                 if self.matrix[i][j] > 1:
@@ -80,6 +74,11 @@ class Matrix():
         for i in range(0, self.row):
             for j in range(0, self.col):
                 self.matrix[i][j] = sigmoid_function(self.matrix[i][j])
+
+    def tanh(self):
+        for i in range(0, self.row):
+            for j in range(0, self.col):
+                self.matrix[i][j] = np.tanh(self.matrix[i][j])
 
     
 
